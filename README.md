@@ -91,4 +91,4 @@ The fake dependency is [Tailwind css](https://tailwindcss.com/). I used it to ge
 # The things you should know if you use this blog generator
 Everything is writen on [my blog](https://rphl.dev/blog/designing-a-no-dependency-blog-generator-with-odin).
 
-Although, to launch the generator, if you have never used Odin, you should install it following the [doc](https://odin-lang.org/docs/install) and run `odin run .`.
+Although, to launch the generator, you should open the *main.odin* file and modify the global variables to adapt to your situation, then run `odin run .`. If you have never used Odin, you should install it following the [doc](https://odin-lang.org/docs/install).
