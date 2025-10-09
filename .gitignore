@@ -1,0 +1,11 @@
+/blog_generated_files
+/generate_tailwind
+/.vscode
+/blog_source_files/static/images/*
+!/blog_source_files/static/images/profile.webp
+/blog_source_files/posts/*
+!/blog_source_files/posts/designing-a-no-dependency-blog-generator-with-odin.md
+/blog_source_files/static/code
+*.exe
+*.pdb
+config.txt

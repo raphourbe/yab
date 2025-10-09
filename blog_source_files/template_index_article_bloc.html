@@ -1,0 +1,41 @@
+<li class="py-10">
+  <article>
+    <div
+      class="space-y-2 xl:grid xl:grid-cols-4 xl:items-baseline xl:space-y-0"
+    >
+      <dl>
+        <dt class="sr-only">Published on</dt>
+        <dd
+          class="text-base font-medium leading-6 text-gray-500 dark:text-gray-400"
+        >
+          <time datetime="{%date%}T00:00:00.000Z">{%parseddate%}</time>
+        </dd>
+      </dl>
+      <div class="xl:col-span-3">
+        <div>
+          <div>
+            <h2 class="text-2xl font-bold leading-8 tracking-tight">
+              <a class="text-gray-900 dark:text-gray-100" href="/blog/{%link%}"
+                >{%title%}</a
+              >
+            </h2>
+            <div class="flex flex-wrap pt-2">{%tags%}</div>
+          </div>
+          <div
+            class="prose py-4 text-lg max-w-none text-gray-500 dark:text-gray-400"
+          >
+            {%articledescription%}
+          </div>
+        </div>
+        <div class="text-lg font-medium leading-6">
+          <a
+            class="text-teal-400 hover:text-teal-300 dark:hover:text-teal-300"
+            aria-label='Read more: "{%title%}"'
+            href="/blog/{%link%}"
+            >Read more →</a
+          >
+        </div>
+      </div>
+    </div>
+  </article>
+</li>

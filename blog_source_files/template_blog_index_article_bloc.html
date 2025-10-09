@@ -1,0 +1,27 @@
+<li class="py-5">
+  <article class="flex flex-col space-y-2 xl:space-y-0">
+    <dl>
+      <dt class="sr-only">Published on</dt>
+      <dd
+        class="text-base font-medium leading-6 text-gray-500 dark:text-gray-400"
+      >
+        <time datetime="{%date%}T00:00:00.000Z">{%parseddate%}</time>
+      </dd>
+    </dl>
+    <div class="space-y-3">
+      <div>
+        <h2 class="text-2xl font-bold leading-8 tracking-tight">
+          <a
+            class="text-gray-900 dark:text-gray-100"
+            href="/blog/{%link%}"
+            >{%title%}</a
+          >
+        </h2>
+        <div class="flex flex-wrap pt-2">{%tags%}</div>
+      </div>
+      <div class="prose max-w-none text-gray-500 dark:text-gray-400">
+        {%articledescription%}
+      </div>
+    </div>
+  </article>
+</li>
