@@ -10,7 +10,7 @@ import "core:strings"
 // to obtain a nice URL in the browser without having "file.html" at the end.
 create_blog_post_into_html_template :: proc(p: Post) -> Parsing_Error {
 	file := fmt.tprint(BLOG_SOURCE_FILES, "template_post.html", sep=PLATEFORM_PATH_SEPARATOR)
-	template, template_error := os.read_entire_file_from_filename_or_err(
+	template, template_error := os.read_entire_file_from_path(
 		name=file, allocator=context.temp_allocator
 	)
 	if template_error != os.ERROR_NONE {
@@ -29,7 +29,7 @@ create_blog_post_into_html_template :: proc(p: Post) -> Parsing_Error {
 		sep=PLATEFORM_PATH_SEPARATOR
 	)
 	if !os.is_dir(path=new_folder_location) {
-    	create_folder_error := os.make_directory(path=new_folder_location)
+    	create_folder_error := os.make_directory(name=new_folder_location)
 		if create_folder_error != os.ERROR_NONE {
 			fmt.println("The following error occured while trying to create the folder: ", new_folder_location) 
 			fmt.println(create_folder_error)
@@ -37,7 +37,7 @@ create_blog_post_into_html_template :: proc(p: Post) -> Parsing_Error {
 		}
 	}
 	new_file_name := fmt.tprint(new_folder_location, "index.html", sep=PLATEFORM_PATH_SEPARATOR)
-	new_file_handle, open_error := os.open(path=new_file_name, mode=os.O_CREATE)
+	new_file_handle, open_error := os.open(name=new_file_name, flags={.Create})
 	if open_error != nil {
 		fmt.println(open_error)
 		return .Open_Error
@@ -57,7 +57,7 @@ create_blog_post_into_html_template :: proc(p: Post) -> Parsing_Error {
 		modified_line, _ = parse_and_replace_inline(l=modified_line, old="{%formatedDate%}", new=beautiful_date)
 		
 		if l != modified_line { 
-			i, write_error := os.write_string(fd=new_file_handle, str=modified_line)
+			i, write_error := os.write_string(f=new_file_handle, s=modified_line)
 			if write_error != nil {
 				fmt.println("Error while writing line: ", modified_line)
 				return .Write_Error
@@ -67,7 +67,7 @@ create_blog_post_into_html_template :: proc(p: Post) -> Parsing_Error {
 
 		if strings.index(s=l, substr="{%content%}") >= 0 {
 			for c in p.content {
-				i, write_error := os.write_string(fd=new_file_handle, str=c)
+				i, write_error := os.write_string(f=new_file_handle, s=c)
 				if write_error != nil {
 					fmt.println("Error while writing line: ", l)
 					return .Write_Error
@@ -88,7 +88,7 @@ create_blog_post_into_html_template :: proc(p: Post) -> Parsing_Error {
 					"</a>",
 					 sep=""
 				)
-				i, write_error := os.write_string(fd=new_file_handle, str=tag_link)
+				i, write_error := os.write_string(f=new_file_handle, s=tag_link)
 				if write_error != nil {
 					fmt.println("Error while writing line: ", l)
 					return .Write_Error
@@ -98,13 +98,13 @@ create_blog_post_into_html_template :: proc(p: Post) -> Parsing_Error {
 		}
 
 		// Nothing has been written yet: copy the old line as such.
-		i, write_error := os.write_string(fd=new_file_handle, str=l)
+		i, write_error := os.write_string(f=new_file_handle, s=l)
 		if write_error != nil {
 			fmt.println("Error while writing line: ", l)
 			return .Write_Error
 		}
 	}
-	closing_error := os.close(fd=new_file_handle)
+	closing_error := os.close(f=new_file_handle)
 	if closing_error != nil {
 		fmt.println("Error while closing: ", new_file_name)
 		return .Write_Error
@@ -118,7 +118,7 @@ create_blog_post_into_html_template :: proc(p: Post) -> Parsing_Error {
 // The page is located at https://yoururl.com
 create_index_with_html_template :: proc(posts: []Post) -> Parsing_Error {
 	file := fmt.tprint(BLOG_SOURCE_FILES, "template_index.html", sep=PLATEFORM_PATH_SEPARATOR)
-	template, template_error := os.read_entire_file_from_filename_or_err(
+	template, template_error := os.read_entire_file_from_path(
 		name=file, allocator=context.temp_allocator
 	)
 	if template_error != os.ERROR_NONE {
@@ -131,7 +131,7 @@ create_index_with_html_template :: proc(posts: []Post) -> Parsing_Error {
 	lines : []string = strings.split_lines(s=t, allocator=context.temp_allocator)
 
 	new_file_location := fmt.tprint(BLOG_GENERATED_FILES, "index.html", sep=PLATEFORM_PATH_SEPARATOR)
-	new_file_handle, open_error := os.open(path=new_file_location, mode=os.O_CREATE)
+	new_file_handle, open_error := os.open(name=new_file_location, flags={.Create})
 	if open_error != nil {
 		fmt.println(open_error)
 		return .Open_Error
@@ -140,7 +140,7 @@ create_index_with_html_template :: proc(posts: []Post) -> Parsing_Error {
 	for l in lines {
 		modified_line := parse_and_replace_main_meta_data(l=l)
 		if l != modified_line { 
-			i, write_error := os.write_string(fd=new_file_handle, str=modified_line)
+			i, write_error := os.write_string(f=new_file_handle, s=modified_line)
 			if write_error != nil {
 				fmt.println("Error while writing line: ", modified_line)
 				return .Write_Error
@@ -151,7 +151,7 @@ create_index_with_html_template :: proc(posts: []Post) -> Parsing_Error {
 		if strings.index(s=l, substr="{%posts%}") >= 0 {
 			for p in posts {
 				post_bloc := create_index_article_bloc(p=p) or_return
-				i, write_error := os.write_string(fd=new_file_handle, str=post_bloc)
+				i, write_error := os.write_string(f=new_file_handle, s=post_bloc)
 				if write_error != nil {
 					fmt.println("Error while writing line: ", l)
 					return .Write_Error
@@ -161,14 +161,14 @@ create_index_with_html_template :: proc(posts: []Post) -> Parsing_Error {
 		}
 
 		// Nothing has been written yet: copy the old line as such.
-		i, write_error := os.write_string(fd=new_file_handle, str=l)
+		i, write_error := os.write_string(f=new_file_handle, s=l)
 		if write_error != nil {
 			fmt.println("Error while writing line: ", l)
 			return .Write_Error
 		}
 	}
 	
-	closing_error := os.close(fd=new_file_handle)
+	closing_error := os.close(f=new_file_handle)
 	if closing_error != nil {
 		fmt.println("Error while closing: ", new_file_location)
 		return .Write_Error
@@ -180,7 +180,7 @@ create_index_with_html_template :: proc(posts: []Post) -> Parsing_Error {
 // The blog page is located at https://yoururl.com/blog
 create_index_article_bloc :: proc(p: Post) -> (bloc: string, err:Parsing_Error) {
 	file := fmt.tprint(BLOG_SOURCE_FILES, "template_index_article_bloc.html", sep=PLATEFORM_PATH_SEPARATOR)
-	template, template_error := os.read_entire_file_from_filename_or_err(
+	template, template_error := os.read_entire_file_from_path(
 		name=file, allocator=context.temp_allocator
 	)
 	if template_error != os.ERROR_NONE {
@@ -240,10 +240,9 @@ create_index_article_bloc :: proc(p: Post) -> (bloc: string, err:Parsing_Error) 
 // Copy the template_blog_index.html page and parse it to add blog's index.html 
 // or a tag posts listing.
 // The page is located at https://yoururl.com/blog
-// TODO: chronological order to change.
 create_posts_listing_with_html_template :: proc(posts: [dynamic]Post, tags: [dynamic]Tag, tag: string = "") -> Parsing_Error {
 	file := fmt.tprint(BLOG_SOURCE_FILES, "template_blog_index.html", sep=PLATEFORM_PATH_SEPARATOR)
-	template, template_error := os.read_entire_file_from_filename_or_err(
+	template, template_error := os.read_entire_file_from_path(
 		name=file, allocator=context.temp_allocator
 	)
 	if template_error != os.ERROR_NONE {
@@ -264,7 +263,7 @@ create_posts_listing_with_html_template :: proc(posts: [dynamic]Post, tags: [dyn
 		sep=PLATEFORM_PATH_SEPARATOR
 		)
 		if !os.is_dir(path=new_folder_location) {
-	    	create_folder_error := os.make_directory(path=new_folder_location)
+	    	create_folder_error := os.make_directory(name=new_folder_location)
 			if create_folder_error != os.ERROR_NONE {
 				fmt.println("The following error occured while trying to create the folder: ", new_folder_location) 
 				fmt.println(create_folder_error)
@@ -276,7 +275,7 @@ create_posts_listing_with_html_template :: proc(posts: [dynamic]Post, tags: [dyn
 	} else {
 		new_file_location = fmt.tprint(BLOG_GENERATED_FILES, "blog", "index.html", sep=PLATEFORM_PATH_SEPARATOR)
 	}
-	new_file_handle, open_error := os.open(path=new_file_location, mode=os.O_CREATE)
+	new_file_handle, open_error := os.open(name=new_file_location, flags={.Create})
 	if open_error != nil {
 		fmt.println(open_error)
 		return .Open_Error
@@ -291,7 +290,7 @@ create_posts_listing_with_html_template :: proc(posts: [dynamic]Post, tags: [dyn
 		}
 		
 		if l != modified_line { 
-			i, write_error := os.write_string(fd=new_file_handle, str=modified_line)
+			i, write_error := os.write_string(f=new_file_handle, s=modified_line)
 			if write_error != nil {
 				fmt.println("Error while writing line: ", modified_line)
 				return .Write_Error
@@ -306,7 +305,7 @@ create_posts_listing_with_html_template :: proc(posts: [dynamic]Post, tags: [dyn
 				static_relative = "../static"
 			}
 			modified_line, _ = parse_and_replace_inline(l=l, old="{%static%}", new=static_relative)
-			i, write_error := os.write_string(fd=new_file_handle, str=modified_line)
+			i, write_error := os.write_string(f=new_file_handle, s=modified_line)
 			if write_error != nil {
 				fmt.println("Error while writing line: ", l)
 				return .Write_Error
@@ -319,14 +318,14 @@ create_posts_listing_with_html_template :: proc(posts: [dynamic]Post, tags: [dyn
 				if tag =="" {
 					// Blog page: display all
 					post_bloc = create_blog_index_article_bloc(p=p, tag=tag) or_return
-					i, write_error := os.write_string(fd=new_file_handle, str=post_bloc)
+					i, write_error := os.write_string(f=new_file_handle, s=post_bloc)
 					if write_error != nil {
 						fmt.println("Error while writing line: ", l)
 						return .Write_Error
 					}
 				} else if slice.contains(p.tags, tag) {
 					post_bloc = create_blog_index_article_bloc(p=p, tag=tag) or_return
-					i, write_error := os.write_string(fd=new_file_handle, str=post_bloc)
+					i, write_error := os.write_string(f=new_file_handle, s=post_bloc)
 					if write_error != nil {
 						fmt.println("Error while writing line: ", l)
 						return .Write_Error
@@ -382,7 +381,7 @@ create_posts_listing_with_html_template :: proc(posts: [dynamic]Post, tags: [dyn
 				}
 				
 				
-				i, write_error := os.write_string(fd=new_file_handle, str=tag_link)
+				i, write_error := os.write_string(f=new_file_handle, s=tag_link)
 				if write_error != nil {
 					fmt.println("Error while writing line: ", tag_link)
 					return .Write_Error
@@ -393,14 +392,14 @@ create_posts_listing_with_html_template :: proc(posts: [dynamic]Post, tags: [dyn
 		}
 
 		// Nothing has been written yet: copy the old line as such.
-		i, write_error := os.write_string(fd=new_file_handle, str=l)
+		i, write_error := os.write_string(f=new_file_handle, s=l)
 		if write_error != nil {
 			fmt.println("Error while writing line: ", l)
 			return .Write_Error
 		}
 	}
 	
-	closing_error := os.close(fd=new_file_handle)
+	closing_error := os.close(f=new_file_handle)
 	if closing_error != nil {
 		fmt.println("Error while closing: ", new_file_location)
 		return .Write_Error
@@ -409,10 +408,10 @@ create_posts_listing_with_html_template :: proc(posts: [dynamic]Post, tags: [dyn
 }
 
 // Create the html div bloc for the post on the landing page of the blog.
-// The page is located at https://yoururl.com
+// The page is located at https://yoururl.com/blog
 create_blog_index_article_bloc :: proc(p: Post, tag: string = "") -> (bloc: string, err:Parsing_Error) {
 	file := fmt.tprint(BLOG_SOURCE_FILES, "template_blog_index_article_bloc.html", sep=PLATEFORM_PATH_SEPARATOR)
-	template, template_error := os.read_entire_file_from_filename_or_err(
+	template, template_error := os.read_entire_file_from_path(
 		name=file, allocator=context.temp_allocator
 	)
 	if template_error != os.ERROR_NONE {
@@ -472,7 +471,7 @@ create_blog_index_article_bloc :: proc(p: Post, tag: string = "") -> (bloc: stri
 // The tags page is located at https://yoururl.com/tags
 create_tags_index_with_html_template :: proc(tags: [dynamic]Tag) -> Parsing_Error {
 	file := fmt.tprint(BLOG_SOURCE_FILES, "template_tags_index.html", sep=PLATEFORM_PATH_SEPARATOR)
-	template, template_error := os.read_entire_file_from_filename_or_err(name=file, allocator=context.temp_allocator)
+	template, template_error := os.read_entire_file_from_path(name=file, allocator=context.temp_allocator)
 	if template_error != os.ERROR_NONE {
 		fmt.println("The following error occured while reading the file: ", file) 
 		fmt.println(template_error)
@@ -483,7 +482,7 @@ create_tags_index_with_html_template :: proc(tags: [dynamic]Tag) -> Parsing_Erro
 	lines : []string = strings.split_lines(s=t, allocator=context.temp_allocator)
 
 	new_file_location := fmt.tprint(BLOG_GENERATED_FILES, "tags", "index.html", sep=PLATEFORM_PATH_SEPARATOR)
-	new_file_handle, open_error := os.open(path=new_file_location, mode=os.O_CREATE)
+	new_file_handle, open_error := os.open(name=new_file_location, flags={.Create})
 	if open_error != nil {
 		fmt.println(open_error)
 		return .Open_Error
@@ -492,7 +491,7 @@ create_tags_index_with_html_template :: proc(tags: [dynamic]Tag) -> Parsing_Erro
 	for l in lines {
 		modified_line := parse_and_replace_main_meta_data(l=l)
 		if l != modified_line { 
-			i, write_error := os.write_string(fd=new_file_handle, str=modified_line)
+			i, write_error := os.write_string(f=new_file_handle, s=modified_line)
 			if write_error != nil {
 				fmt.println("Error while writing line: ", modified_line)
 				return .Write_Error
@@ -503,7 +502,7 @@ create_tags_index_with_html_template :: proc(tags: [dynamic]Tag) -> Parsing_Erro
 		if strings.index(s=l, substr="{%tags%}") >= 0 {
 			for tag in tags {
 				tag_bloc := create_tags_tag_bloc(tag=tag) or_return
-				i, write_error := os.write_string(fd=new_file_handle, str=tag_bloc)
+				i, write_error := os.write_string(f=new_file_handle, s=tag_bloc)
 				if write_error != nil {
 					fmt.println("Error while writing line: ", l)
 					return .Write_Error
@@ -513,14 +512,14 @@ create_tags_index_with_html_template :: proc(tags: [dynamic]Tag) -> Parsing_Erro
 		}
 
 		// Nothing has been written yet: copy the old line as such.
-		i, write_error := os.write_string(fd=new_file_handle, str=l)
+		i, write_error := os.write_string(f=new_file_handle, s=l)
 		if write_error != nil {
 			fmt.println("Error while writing line: ", l)
 			return .Write_Error
 		}
 	}
 	
-	closing_error := os.close(fd=new_file_handle)
+	closing_error := os.close(f=new_file_handle)
 	if closing_error != nil {
 		fmt.println("Error while closing: ", new_file_location)
 		return .Write_Error
@@ -532,7 +531,7 @@ create_tags_index_with_html_template :: proc(tags: [dynamic]Tag) -> Parsing_Erro
 // The tags page is located at https://yoururl.com/tags
 create_tags_tag_bloc :: proc(tag: Tag) -> (bloc: string, err:Parsing_Error) {
 	file := fmt.tprint(BLOG_SOURCE_FILES, "template_tags_index_tag_bloc.html", sep=PLATEFORM_PATH_SEPARATOR)
-	template, template_error := os.read_entire_file_from_filename_or_err(name=file, allocator=context.temp_allocator)
+	template, template_error := os.read_entire_file_from_path(name=file, allocator=context.temp_allocator)
 	if template_error != os.ERROR_NONE {
 		fmt.println("The following error occured while reading the file: ", file) 
 		fmt.println(template_error)
@@ -565,7 +564,7 @@ create_tags_tag_bloc :: proc(tag: Tag) -> (bloc: string, err:Parsing_Error) {
 // The about page is located at https://yoururl.com/about
 create_about_with_html_template :: proc() -> Parsing_Error {
 	file := fmt.tprint(BLOG_SOURCE_FILES, "template_about.html", sep=PLATEFORM_PATH_SEPARATOR)
-	template, template_error := os.read_entire_file_from_filename_or_err(name=file, allocator=context.temp_allocator)
+	template, template_error := os.read_entire_file_from_path(name=file, allocator=context.temp_allocator)
 	if template_error != os.ERROR_NONE {
 		fmt.println("The following error occured while reading the file: ", file) 
 		fmt.println(template_error)
@@ -576,7 +575,7 @@ create_about_with_html_template :: proc() -> Parsing_Error {
 	lines : []string = strings.split_lines(s=t, allocator=context.temp_allocator)
 	new_folder_location := fmt.tprint(BLOG_GENERATED_FILES, "about", sep=PLATEFORM_PATH_SEPARATOR)
 	if !os.is_dir(path=new_folder_location) {
-    	create_folder_error := os.make_directory(path=new_folder_location)
+    	create_folder_error := os.make_directory(name=new_folder_location)
 		if create_folder_error != os.ERROR_NONE {
 			fmt.println("The following error occured while trying to create the folder: ", new_folder_location) 
 			fmt.println(create_folder_error)
@@ -585,7 +584,7 @@ create_about_with_html_template :: proc() -> Parsing_Error {
 	}
 
 	new_file_location := fmt.tprint(new_folder_location, "index.html", sep=PLATEFORM_PATH_SEPARATOR)
-	new_file_handle, open_error := os.open(path=new_file_location, mode=os.O_CREATE)
+	new_file_handle, open_error := os.open(name=new_file_location, flags={.Create})
 	if open_error != nil {
 		fmt.println(open_error)
 		return .Open_Error
@@ -595,7 +594,7 @@ create_about_with_html_template :: proc() -> Parsing_Error {
 		modified_line := parse_and_replace_main_meta_data(l=l)
 		modified_line, _ = parse_and_replace_inline(l=modified_line, old="{%company%}", new=YOUR_COMPANY)
 		if l != modified_line { 
-			i, write_error := os.write_string(fd=new_file_handle, str=modified_line)
+			i, write_error := os.write_string(f=new_file_handle, s=modified_line)
 			if write_error != nil {
 				fmt.println("Error while writing line: ", modified_line)
 				return .Write_Error
@@ -604,14 +603,14 @@ create_about_with_html_template :: proc() -> Parsing_Error {
 		}
 
 		// Nothing has been written yet: copy the old line as such.
-		i, write_error := os.write_string(fd=new_file_handle, str=l)
+		i, write_error := os.write_string(f=new_file_handle, s=l)
 		if write_error != nil {
 			fmt.println("Error while writing line: ", l)
 			return .Write_Error
 		}
 	}
 	
-	closing_error := os.close(fd=new_file_handle)
+	closing_error := os.close(f=new_file_handle)
 	if closing_error != nil {
 		fmt.println("Error while closing: ", new_file_location)
 		return .Write_Error

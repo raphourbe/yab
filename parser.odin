@@ -25,7 +25,7 @@ parse_and_replace_main_meta_data :: proc(l: string) -> string{
 }
 
 parse_md_file :: proc(file:string) -> (p: Post, err: Parsing_Error) {
-	data, data_error := os.read_entire_file_from_filename_or_err(name=file, allocator=context.temp_allocator)
+	data, data_error := os.read_entire_file_from_path(name=file, allocator=context.temp_allocator)
 	if data_error != os.ERROR_NONE {
 		fmt.println("The following error occured while reading the file: ", file) 
 		fmt.println(data_error)
@@ -97,7 +97,7 @@ parse_post_content :: proc(lines: []string, p: ^Post) -> Parsing_Error {
 	content : [dynamic]string
 	in_paragraph_bloc: bool
 	in_code_bloc: bool
-	in_enumeration_bloc: int = -1 // represent the enumeration number we are / -1 if not in an enumeration bloc
+	in_enumeration_bloc: i64 = -1 // represent the enumeration number we are / -1 if not in an enumeration bloc
 	in_list_bloc: bool
 	in_unescaped_html_bloc: bool
 	in_blockquote_bloc: bool
@@ -115,30 +115,31 @@ parse_post_content :: proc(lines: []string, p: ^Post) -> Parsing_Error {
 			title: string
 			href: string
 			a_tag: string
+			title_id: string
 			if strings.has_prefix(s=value, prefix="#####") {
 				title = strings.trim_prefix(s=value, prefix="#####")
-				href, a_tag = parse_blog_title_to_create_href_and_a_tag(title=title, post_name=p.file_name)
-				html_title = fmt.tprint("<h5 class=\"content-header\">", a_tag, title,"</h5>", sep="")
+				href, title_id, a_tag = parse_blog_title_to_create_href_id_and_tag(title=title, post_name=p.file_name)
+				html_title = fmt.tprint("<h5 class=\"content-header\" id=\"", title_id, "\">", a_tag, title,"</h5>", sep="")
 				append(&p.toc.titles, H_Title{level=5, value=title, href=href})
 			} else if strings.has_prefix(s=value, prefix="####") {				
 				title = strings.trim_prefix(s=value, prefix="####")				
-				href, a_tag = parse_blog_title_to_create_href_and_a_tag(title=title, post_name=p.file_name)
-				html_title = fmt.tprint("<h4 class=\"content-header\">", a_tag, title,"</h4>", sep="")
+				href, title_id, a_tag = parse_blog_title_to_create_href_id_and_tag(title=title, post_name=p.file_name)
+				html_title = fmt.tprint("<h4 class=\"content-header\" id=\"", title_id, "\">", a_tag, title,"</h4>", sep="")
 				append(&p.toc.titles, H_Title{level=4, value=title, href=href})
 			} else if strings.has_prefix(s=value, prefix="###") {
 				title = strings.trim_prefix(s=value, prefix="###")
-				href, a_tag = parse_blog_title_to_create_href_and_a_tag(title=title, post_name=p.file_name)
-				html_title = fmt.tprint("<h3 class=\"content-header\">", a_tag, title,"</h3>", sep="")
+				href, title_id, a_tag = parse_blog_title_to_create_href_id_and_tag(title=title, post_name=p.file_name)
+				html_title = fmt.tprint("<h3 class=\"content-header\" id=\"", title_id, "\">", a_tag, title,"</h3>", sep="")
 				append(&p.toc.titles, H_Title{level=3, value=title, href=href})
 			} else if strings.has_prefix(s=value, prefix="##") {
 				title = strings.trim_prefix(s=value, prefix="##")
-				href, a_tag = parse_blog_title_to_create_href_and_a_tag(title=title, post_name=p.file_name)
-				html_title = fmt.tprint("<h2 class=\"content-header\">", a_tag, title,"</h2>", sep="")
+				href, title_id, a_tag = parse_blog_title_to_create_href_id_and_tag(title=title, post_name=p.file_name)
+				html_title = fmt.tprint("<h2 class=\"content-header\" id=\"", title_id, "\">", a_tag, title,"</h2>", sep="")
 				append(&p.toc.titles, H_Title{level=2, value=title, href=href})
 			} else if strings.has_prefix(s=value, prefix="#") {
 				title = strings.trim_prefix(s=value, prefix="#")
-				href, a_tag = parse_blog_title_to_create_href_and_a_tag(title=title, post_name=p.file_name)
-				html_title = fmt.tprint("<h1 class=\"content-header\">", a_tag, title,"</h1>", sep="")
+				href, title_id, a_tag = parse_blog_title_to_create_href_id_and_tag(title=title, post_name=p.file_name)
+				html_title = fmt.tprint("<h1 class=\"content-header\" id=\"", title_id, "\">", a_tag, title,"</h1>", sep="")
 				append(&p.toc.titles, H_Title{level=1, value=title, href=href})
 			} else {
 				html_title = value
@@ -194,7 +195,8 @@ parse_post_content :: proc(lines: []string, p: ^Post) -> Parsing_Error {
 			// The first space is before the value we want
 			enum_index := strings.index(s=value, substr=" ") + 1
 			buf: [4]byte
-			enum_prefix := fmt.tprint(strconv.itoa(buf=buf[:], i=in_enumeration_bloc), ".", sep="")
+
+			enum_prefix := fmt.tprint(strconv.write_int(buf=buf[:], i=in_enumeration_bloc, base=10), ".", sep="")
 			if index+1 < len(lines) && len(lines[index+1]) != 0 {
 				if strings.has_prefix(s=value, prefix=enum_prefix) {
 					paragraph = fmt.tprint(paragraph, "<li>", value[enum_index:], sep="")
@@ -203,7 +205,7 @@ parse_post_content :: proc(lines: []string, p: ^Post) -> Parsing_Error {
 				}
 
 				// Is the <li> spreading on several lines? Or should we close the </li>
-				enum_prefix = fmt.tprint(strconv.itoa(buf=buf[:], i=in_enumeration_bloc+1), ".", sep="")
+				enum_prefix = fmt.tprint(strconv.write_int(buf=buf[:], i=in_enumeration_bloc+1, base=10), ".", sep="")
 				if strings.has_prefix(s=lines[index+1], prefix=enum_prefix) {
 					// This one is over.
 					paragraph = fmt.tprint(paragraph, "</li>", sep="")
@@ -285,7 +287,7 @@ parse_post_content :: proc(lines: []string, p: ^Post) -> Parsing_Error {
 					fmt.println("Problem parsing Table of Content. No \"}\" found. The max heading must be written has \"heading={X}\".")
 					return .Wrong_Format
 				}
-				p.toc.max_level = cast(uint)strconv.atoi(s=max_level[0])
+				p.toc.max_level, _ = strconv.parse_uint(s=max_level[0])
 			}
 			continue
 		}
@@ -582,19 +584,25 @@ parse_italic_and_bold_in_paragraph :: proc(p: string) -> string {
 
 // Parse a date like "YYYY-MM-DD" into something like Thursday, October 12, 2025
 parse_complete_date_from_string :: proc(s: string) -> (beautiful_date: string, err: datetime.Error) {
-	d := datetime.components_to_date(year=strconv.atoi(s[:4]), month=strconv.atoi(s[5:7]), day=strconv.atoi(s[8:])) or_return
+	year, _ := strconv.parse_int(s[:4])
+	month, _ := strconv.parse_int(s[5:7])
+	day, _ := strconv.parse_int(s[8:])
+	d := datetime.components_to_date(year=year, month=month, day=day) or_return
 	ordinal := datetime.date_to_ordinal(date=d) or_return
 	day_of_week := datetime.day_of_week(ordinal=ordinal)
-	month := time.Month(strconv.atoi(s[5:7]))
-	beautiful_date = fmt.tprint(day_of_week, ", ", month, " ", strconv.atoi(s[8:]), ", ", s[:4], sep="")
+	m := time.Month(month)
+	beautiful_date = fmt.tprint(day_of_week, ", ", m, " ", day, ", ", s[:4], sep="")
 	return beautiful_date, .None
 }
 
 // Parse a date like "YYYY-MM-DD" into something like October 12, 2025
 parse_half_date_from_string :: proc(s: string) -> (beautiful_date: string, err: datetime.Error) {
-	d := datetime.components_to_date(year=strconv.atoi(s[:4]), month=strconv.atoi(s[5:7]), day=strconv.atoi(s[8:])) or_return
-	month := time.Month(strconv.atoi(s[5:7]))
-	beautiful_date = fmt.tprint(month, " ", strconv.atoi(s[8:]), ", ", s[:4], sep="")
+	year, _ := strconv.parse_int(s[:4])
+	month, _ := strconv.parse_int(s[5:7])
+	day, _ := strconv.parse_int(s[8:])
+	d := datetime.components_to_date(year=year, month=month, day=day) or_return
+	m := time.Month(month)
+	beautiful_date = fmt.tprint(m, " ", day, ", ", s[:4], sep="")
 	return beautiful_date, .None
 }
 
@@ -955,11 +963,12 @@ parse_toc :: proc(p: ^Post) {
 }
 
 // Create a proper href and a tag for referencing titles inside a blog post.
-parse_blog_title_to_create_href_and_a_tag :: proc(title: string, post_name: string) -> (string, string) {
+parse_blog_title_to_create_href_id_and_tag :: proc(title: string, post_name: string) -> (string, string, string) {
 	sane_title := html_sanitize_link(s=title)
-	href := fmt.tprint(post_name, "#", strings.to_snake_case(sane_title), sep="")
+	id := strings.to_snake_case(sane_title)
+	href := fmt.tprint(post_name, "#", id, sep="")
 	href = fmt.tprint(MAIN_URL, "blog", href, sep="/")
-	return href, fmt.tprint(
+	return href, id, fmt.tprint(
 		"<a class=\"break-words\" href=\"",
 		href, 
 		"\" aria-hidden=\"true\" tabindex=\"-1\"><span class=\"content-header-link\"><svg class=\"h-5 linkicon w-5\" fill=\"currentColor\" viewBox=\"0 0 20 20\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M12.232 4.232a2.5 2.5 0 0 1 3.536 3.536l-1.225 1.224a.75.75 0 0 0 1.061 1.06l1.224-1.224a4 4 0 0 0-5.656-5.656l-3 3a4 4 0 0 0 .225 5.865.75.75 0 0 0 .977-1.138 2.5 2.5 0 0 1-.142-3.667l3-3Z\"></path><path d=\"M11.603 7.963a.75.75 0 0 0-.977 1.138 2.5 2.5 0 0 1 .142 3.667l-3 3a2.5 2.5 0 0 1-3.536-3.536l1.225-1.224a.75.75 0 0 0-1.061-1.06l-1.224 1.224a4 4 0 1 0 5.656 5.656l3-3a4 4 0 0 0-.225-5.865Z\"></path></svg></span></a>", 

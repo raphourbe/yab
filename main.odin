@@ -7,18 +7,18 @@ import "core:strings"
 import "core:time"
 import win32 "core:sys/windows"
 
-BLOG_SOURCE_FILES :: "C:\\Users\\super\\Documents\\OdinProjects\\yab\\blog_source_files"
-BLOG_GENERATED_FILES :: "C:\\Users\\super\\Documents\\OdinProjects\\yab\\blog_generated_files"
+BLOG_SOURCE_FILES :: "C:\\Users\\super\\Documents\\OdinProjects\\yet_another_blog\\blog_source_files"
+BLOG_GENERATED_FILES :: "C:\\Users\\super\\Documents\\OdinProjects\\yet_another_blog\\blog_generated_files"
 PLATEFORM_PATH_SEPARATOR :: "\\"  // On windows \\, on Linux / I guess.
-MAIN_URL :: "https://your-site.com"
-YOUR_NAME :: "Your Name"
-YOUR_COMPANY :: "Your Company"
-MAIL_ACCOUNT :: "your@mail.com"
-GITHUB_ACCOUNT :: "yourgithub"
-X_ACCOUNT :: "yourxaccount"
-LINKEDIN_ACCOUNT :: "yourlinkedin"
-BLOG_BASELINE :: "Adventures of the Yab"
-BLOG_DESCRIPTION :: "A blog description."
+MAIN_URL :: "https://rphl.dev"
+YOUR_NAME :: "Raphaël Becanne"
+YOUR_COMPANY :: "PrimeView"
+MAIL_ACCOUNT :: "rbecanne@primeview.fr"
+GITHUB_ACCOUNT :: "raphourbe"
+X_ACCOUNT :: "rbecanne"
+LINKEDIN_ACCOUNT :: "raphaelbecanne"
+BLOG_BASELINE :: "Adventures of a self-proclaimed CTO"
+BLOG_DESCRIPTION :: "A blog describing the problems I had to take care of as a CTO in a SME, and more."
 
 Post :: struct {
 	file_name : string,
@@ -78,7 +78,7 @@ main :: proc() {
 	}
 
 	// Create new folder for generated files
-	create_folder_error : os.Error = os.make_directory(path=BLOG_GENERATED_FILES)
+	create_folder_error : os.Error = os.make_directory(name=BLOG_GENERATED_FILES)
 	if create_folder_error != os.ERROR_NONE {
 		fmt.println("The following error occured while trying to create the folder: ", BLOG_GENERATED_FILES) 
 		fmt.println(create_folder_error)
@@ -87,7 +87,7 @@ main :: proc() {
 
 	// Open the posts folder
 	posts_folder_path := fmt.tprint(BLOG_SOURCE_FILES, "posts", sep=PLATEFORM_PATH_SEPARATOR)
-	posts_path_handle, posts_path_handle_error := os.open(path=posts_folder_path)
+	posts_path_handle, posts_path_handle_error := os.open(name=posts_folder_path)
 	if posts_path_handle_error != nil {
 		fmt.println("The following error occured while trying to open the folder: ", posts_folder_path) 
 		fmt.println(posts_path_handle_error)
@@ -96,9 +96,9 @@ main :: proc() {
 	defer os.close(posts_path_handle)
 
 	// read all files in the folder
-	file_info, file_info_error := os.read_dir(fd=posts_path_handle, n=-1)
+	file_info, file_info_error := os.read_dir(f=posts_path_handle, n=-1, allocator=context.allocator)
 
-	if file_info_error == os.ERROR_NO_MORE_FILES {
+	if len(file_info) == 0 {
 		fmt.println("You did not write any blog post yet in the folder: ", posts_folder_path) 
 		fmt.println(file_info_error)
 		return
@@ -118,7 +118,7 @@ main :: proc() {
 
     for fi in file_info {
     	fmt.println(fi.name)
-        if fi.is_dir {
+        if fi.type == .Directory {
         	continue
         }
         post, post_error := parse_md_file(file=fi.fullpath)
@@ -148,7 +148,7 @@ main :: proc() {
         number_of_posts += 1
     	post.file_name = fi.name
     	if !os.is_dir(path=blog_dir) {
-    		create_folder_error = os.make_directory(path=blog_dir)
+    		create_folder_error = os.make_directory(name=blog_dir)
     		if create_folder_error != os.ERROR_NONE {
 				fmt.println("The following error occured while trying to create the folder: ", blog_dir) 
 				fmt.println(create_folder_error)
@@ -195,7 +195,7 @@ main :: proc() {
 	// tags/index.html --------------------------------------
 	tags_dir : string = fmt.tprint(BLOG_GENERATED_FILES, "tags", sep=PLATEFORM_PATH_SEPARATOR)
 	if !os.is_dir(path=tags_dir) {
-		create_folder_error = os.make_directory(path=tags_dir)
+		create_folder_error = os.make_directory(name=tags_dir)
 		if create_folder_error != os.ERROR_NONE {
 			fmt.println("The following error occured while trying to create the folder: ", tags_dir) 
 			fmt.println(create_folder_error)
