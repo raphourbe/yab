@@ -117,27 +117,27 @@ parse_post_content :: proc(lines: []string, p: ^Post) -> Parsing_Error {
 			a_tag: string
 			title_id: string
 			if strings.has_prefix(s=value, prefix="#####") {
-				title = strings.trim_prefix(s=value, prefix="#####")
+				title = strings.trim_prefix(s=value, prefix="##### ")
 				href, title_id, a_tag = parse_blog_title_to_create_href_id_and_tag(title=title, post_name=p.file_name)
 				html_title = fmt.tprint("<h5 class=\"content-header\" id=\"", title_id, "\">", a_tag, title,"</h5>", sep="")
 				append(&p.toc.titles, H_Title{level=5, value=title, href=href})
 			} else if strings.has_prefix(s=value, prefix="####") {				
-				title = strings.trim_prefix(s=value, prefix="####")				
+				title = strings.trim_prefix(s=value, prefix="#### ")				
 				href, title_id, a_tag = parse_blog_title_to_create_href_id_and_tag(title=title, post_name=p.file_name)
 				html_title = fmt.tprint("<h4 class=\"content-header\" id=\"", title_id, "\">", a_tag, title,"</h4>", sep="")
 				append(&p.toc.titles, H_Title{level=4, value=title, href=href})
 			} else if strings.has_prefix(s=value, prefix="###") {
-				title = strings.trim_prefix(s=value, prefix="###")
+				title = strings.trim_prefix(s=value, prefix="### ")
 				href, title_id, a_tag = parse_blog_title_to_create_href_id_and_tag(title=title, post_name=p.file_name)
 				html_title = fmt.tprint("<h3 class=\"content-header\" id=\"", title_id, "\">", a_tag, title,"</h3>", sep="")
 				append(&p.toc.titles, H_Title{level=3, value=title, href=href})
 			} else if strings.has_prefix(s=value, prefix="##") {
-				title = strings.trim_prefix(s=value, prefix="##")
+				title = strings.trim_prefix(s=value, prefix="## ")
 				href, title_id, a_tag = parse_blog_title_to_create_href_id_and_tag(title=title, post_name=p.file_name)
 				html_title = fmt.tprint("<h2 class=\"content-header\" id=\"", title_id, "\">", a_tag, title,"</h2>", sep="")
 				append(&p.toc.titles, H_Title{level=2, value=title, href=href})
 			} else if strings.has_prefix(s=value, prefix="#") {
-				title = strings.trim_prefix(s=value, prefix="#")
+				title = strings.trim_prefix(s=value, prefix="# ")
 				href, title_id, a_tag = parse_blog_title_to_create_href_id_and_tag(title=title, post_name=p.file_name)
 				html_title = fmt.tprint("<h1 class=\"content-header\" id=\"", title_id, "\">", a_tag, title,"</h1>", sep="")
 				append(&p.toc.titles, H_Title{level=1, value=title, href=href})
